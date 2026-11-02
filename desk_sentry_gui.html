@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>桌面哨兵 DeskSentry</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0d1117;--card:#161b26;--card2:#1c2331;--line:#252d3d;--tx:#e6edf3;--tx2:#8b98a9;--b1:#4a8cff;--b2:#3ed0a8;--grad:linear-gradient(135deg,#4a8cff,#3ed0a8)}
+html,body{height:100%}
+body{background:var(--bg);color:var(--tx);font:14px/1.6 "Microsoft YaHei UI",system-ui,sans-serif;overflow-y:scroll}
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(900px 400px at 85% -10%,rgba(74,140,255,.14),transparent 60%),radial-gradient(700px 380px at -10% 110%,rgba(62,208,168,.10),transparent 60%);pointer-events:none;z-index:0}
+.app{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:26px 22px 40px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.brand{display:flex;align-items:center;gap:14px}
+.logo{width:52px;height:52px;border-radius:13px;box-shadow:0 6px 22px rgba(74,140,255,.35)}
+h1{font-size:21px;font-weight:700;letter-spacing:.5px}
+h1 span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
+.dirline{color:var(--tx2);font-size:12px;max-width:560px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill{display:flex;align-items:center;gap:7px;padding:7px 15px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-size:13px;color:var(--tx2)}
+.pill .dot{width:9px;height:9px;border-radius:50%;background:#556070;transition:.3s}
+.pill.on{color:#3ed0a8;border-color:rgba(62,208,168,.4);background:rgba(62,208,168,.08)}
+.pill.on .dot{background:#3ed0a8;box-shadow:0 0 10px #3ed0a8;animation:blink 1.6s infinite}
+@keyframes blink{50%{opacity:.35}}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:18px 16px;transition:.25s}
+.card:hover{transform:translateY(-2px);border-color:#33405a}
+.card .num{font-size:30px;font-weight:800;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.card .lab{color:var(--tx2);font-size:12px;margin-top:3px}
+.actions{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+button{font:inherit;color:var(--tx);background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:11px 22px;cursor:pointer;transition:.2s;font-weight:600}
+button:hover{border-color:#3d4c68;background:#232c3e}
+button:active{transform:scale(.97)}
+button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn-main{background:var(--grad);border:none;color:#06121f;font-weight:800;padding:11px 30px;box-shadow:0 6px 20px rgba(74,140,255,.3)}
+.btn-main:hover{filter:brightness(1.12);background:var(--grad)}
+.btn-danger:hover{border-color:rgba(255,110,110,.55);color:#ff8a8a}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:18px 20px;margin-bottom:18px}
+.panel h2{font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.panel h2::before{content:"";width:4px;height:15px;border-radius:2px;background:var(--grad)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.row p{color:var(--tx2);font-size:12px}
+.ctrl{display:flex;align-items:center;gap:12px}
+select{font:inherit;color:var(--tx);background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:7px 10px;cursor:pointer}
+.switch{position:relative;width:52px;height:28px;flex:none}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:#2a3346;border-radius:999px;cursor:pointer;transition:.25s}
+.slider::before{content:"";position:absolute;width:20px;height:20px;left:4px;top:4px;background:#93a1b5;border-radius:50%;transition:.25s}
+.switch input:checked+.slider{background:linear-gradient(135deg,#2f7ae6,#2bb98f)}
+.switch input:checked+.slider::before{transform:translateX(24px);background:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:12px}
+.chip{display:flex;align-items:center;gap:7px;padding:5px 13px;border-radius:999px;font-size:12.5px;background:var(--card2);border:1px solid var(--line)}
+.chip b{font-size:14px}
+.chip i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.grp{margin-bottom:10px}
+.grp .hd{cursor:pointer;padding:8px 12px;border-radius:10px;background:var(--card2);display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:13.5px;transition:.15s}
+.grp .hd:hover{background:#232c3e}
+.grp .hd .cnt{color:var(--tx2);font-weight:400;font-size:12px}
+.grp .bd{display:none;padding:8px 4px 2px 16px;flex-wrap:wrap;gap:6px}
+.grp.open .bd{display:flex}
+.tagfile{font-size:12px;color:var(--tx2);background:var(--card2);border:1px solid var(--line);border-radius:7px;padding:3px 10px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tagfile.k{border-style:dashed;opacity:.7}
+#log{font:12px/1.85 Consolas,"Microsoft YaHei UI",monospace;color:#a9b7c6;background:#0b0f16;border:1px solid var(--line);border-radius:11px;padding:12px 14px;max-height:260px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
+#log .t{color:#5a6a80}
+#log .ok{color:#3ed0a8}
+#log .warn{color:#ffb86b}
+.minibtn{font-size:12px;padding:3px 12px;border-radius:8px;font-weight:400;color:var(--tx2)}
+footer{display:flex;justify-content:space-between;align-items:center;color:var(--tx2);font-size:12px;margin-top:4px;flex-wrap:wrap;gap:8px}
+footer a{color:#5aa2ff;text-decoration:none}
+footer a:hover{text-decoration:underline}
+#toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);background:#1d2636;border:1px solid #33405a;color:var(--tx);padding:11px 24px;border-radius:12px;box-shadow:0 10px 34px rgba(0,0,0,.5);opacity:0;transition:.3s;z-index:9;font-weight:600;max-width:80vw}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <img class="logo" src="/icon" alt="">
+      <div>
+        <h1>桌面哨兵 <span>DeskSentry</span></h1>
+        <div class="dirline" id="dirLine">正在连接…</div>
+      </div>
+    </div>
+    <div class="pill" id="watchPill"><span class="dot"></span><span id="watchPillTxt">值守未开启</span></div>
+  </header>
+
+  <section class="stats">
+    <div class="card"><div class="num" id="stTodo">–</div><div class="lab">待整理</div></div>
+    <div class="card"><div class="num" id="stTotal">–</div><div class="lab">桌面项目</div></div>
+    <div class="card"><div class="num" id="stFolders">–</div><div class="lab">分类文件夹</div></div>
+    <div class="card"><div class="num" id="stUndo">–</div><div class="lab">可撤销上次整理</div></div>
+  </section>
+
+  <section class="actions">
+    <button class="btn-main" id="btnApply">⚡ 立即整理</button>
+    <button id="btnPreview">👁 预览(只看不动)</button>
+    <button id="btnUndo" class="btn-danger">↩ 撤销上一次</button>
+  </section>
+
+  <section class="panel">
+    <h2>自动值守</h2>
+    <div class="row">
+      <p>开启后,桌面再冒出新东西(下载的文件、商店生成的快捷方式)会被立刻自动整理:文件归档进文件夹,快捷方式归位到所属分类。</p>
+      <div class="ctrl">
+        <select id="secSel">
+          <option value="1">每 1 秒</option>
+          <option value="3" selected>每 3 秒</option>
+          <option value="5">每 5 秒</option>
+          <option value="10">每 10 秒</option>
+        </select>
+        <label class="switch"><input type="checkbox" id="watchSw"><span class="slider"></span></label>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>分类明细</h2>
+    <div class="chips" id="chips"></div>
+    <div id="groups"></div>
+  </section>
+
+  <section class="panel">
+    <h2>活动日志 <button class="minibtn" id="btnClearLog">清空显示</button></h2>
+    <div id="log"></div>
+  </section>
+
+  <footer>
+    <div>桌面哨兵 DeskSentry v1.5 · 本地运行,数据不出本机</div>
+    <div><a href="https://github.com/wwh833/desk-sentry" target="_blank" rel="noreferrer">GitHub 项目页 ↗</a></div>
+  </footer>
+</div>
+<div id="toast"></div>
+
+<script>
+const TOKEN = "__DS_TOKEN__";
+const $ = id => document.getElementById(id);
+let busy = false, actSeq = -1, actLines = [];
+
+function toast(msg, ms) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove("show"), ms || 2600);
+}
+
+async function api(path, method, body) {
+  const r = await fetch(path, {
+    method: method || "GET",
+    headers: { "X-Token": TOKEN, "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  return r.json();
+}
+
+function fmtTime(d) {
+  const p = n => (n < 10 ? "0" : "") + n;
+  return p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+}
+
+function renderState(s) {
+  $("dirLine").textContent = "目录:" + s.dir;
+  $("stTodo").textContent = s.todo;
+  $("stTotal").textContent = s.total;
+  $("stFolders").textContent = s.folders;
+  $("stUndo").textContent = s.canUndo ? "✓" : "—";
+  $("btnUndo").disabled = !s.canUndo;
+  $("watchPill").classList.toggle("on", s.watching);
+  $("watchPillTxt").textContent = s.watching ? ("值守中 · 每 " + s.watchSec + " 秒") : "值守未开启";
+  if ($("watchSw").checked !== s.watching) $("watchSw").checked = s.watching;
+
+  const cols = ["#4a8cff","#a78bfa","#f87171","#fbbf24","#34d399","#fb923c","#22d3ee","#f472b6","#94a3b8"];
+  const chips = $("chips");
+  chips.innerHTML = "";
+  s.groups.forEach((g, i) => {
+    const el = document.createElement("span");
+    el.className = "chip";
+    el.innerHTML = '<i style="background:' + cols[i % cols.length] + '"></i>' + g.cat + " <b>" + g.n + "</b>";
+    chips.appendChild(el);
+  });
+  if (s.kept > 0) {
+    const el = document.createElement("span");
+    el.className = "chip";
+    el.innerHTML = '<i style="background:#556070"></i>系统入口保留 <b>' + s.kept + "</b>";
+    chips.appendChild(el);
+  }
+
+  const gr = $("groups");
+  gr.innerHTML = "";
+  s.groups.forEach((g, i) => {
+    const d = document.createElement("div");
+    d.className = "grp";
+    let files = "";
+    g.files.forEach(f => files += '<span class="tagfile" title="' + esc(f) + '">' + esc(f) + "</span>");
+    d.innerHTML = '<div class="hd"><span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' +
+      cols[i % cols.length] + ';margin-right:8px"></i>' + g.cat + '</span><span class="cnt">' + g.n + " 项 ▾</span></div>" +
+      '<div class="bd">' + (files || '<span class="tagfile k">(空)</span>') + "</div>";
+    d.querySelector(".hd").onclick = () => d.classList.toggle("open");
+    gr.appendChild(d);
+  });
+}
+
+function esc(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function appendActivity(text) {
+  if (!text) return;
+  const log = $("log");
+  text.split("\n").forEach(line => {
+    if (!line.trim()) return;
+    actLines.push('<span class="t">[' + fmtTime(new Date()) + "]</span> " + esc(line));
+  });
+  if (actLines.length > 220) actLines = actLines.slice(-220);
+  log.innerHTML = actLines.join("\n");
+  log.scrollTop = log.scrollHeight;
+}
+
+async function pollState() {
+  try { renderState(await api("/api/state")); }
+  catch (e) { $("dirLine").textContent = "连接中断,重试中…"; }
+}
+
+async function pollActivity() {
+  try {
+    const a = await api("/api/activity?since=" + actSeq);
+    actSeq = a.total;
+    appendActivity(a.text);
+  } catch (e) {}
+}
+
+async function doOp(btn, name, fn) {
+  if (busy) return;
+  busy = true;
+  btn.disabled = true;
+  const old = btn.textContent;
+  btn.textContent = "处理中…";
+  try {
+    const r = await fn();
+    if (r && r.text) appendActivity(r.text);
+    toast(name + "完成");
+    await pollState();
+  } catch (e) {
+    toast(name + "失败:" + e.message, 4000);
+  }
+  btn.textContent = old;
+  btn.disabled = false;
+  busy = false;
+}
+
+$("btnApply").onclick = function () {
+  if (!confirm("确认整理当前目录?\n整理后可随时一键撤销。")) return;
+  doOp(this, "整理", () => api("/api/apply", "POST"));
+};
+$("btnPreview").onclick = function () { doOp(this, "预览", () => api("/api/preview", "POST")); };
+$("btnUndo").onclick = function () { doOp(this, "撤销", () => api("/api/undo", "POST")); };
+$("btnClearLog").onclick = () => { actLines = []; $("log").innerHTML = ""; };
+
+$("secSel").onchange = async () => {
+  if ($("watchSw").checked) {
+    try { await api("/api/watch/start", "POST", { sec: parseInt($("secSel").value) }); await pollState(); }
+    catch (e) { toast("调整失败:" + e.message, 4000); }
+  }
+};
+$("watchSw").onchange = async function () {
+  try {
+    if (this.checked) {
+      await api("/api/watch/start", "POST", { sec: parseInt($("secSel").value) });
+      toast("值守已开启,新图标和新文件会自动归类");
+    } else {
+      await api("/api/watch/stop", "POST");
+      toast("值守已关闭");
+    }
+    await pollState();
+  } catch (e) {
+    toast("操作失败:" + e.message, 4000);
+    this.checked = !this.checked;
+  }
+};
+
+pollState();
+pollActivity();
+setInterval(pollState, 2000);
+setInterval(pollActivity, 1500);
+</script>
+</body>
+</html>
