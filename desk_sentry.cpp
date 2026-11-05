@@ -2026,12 +2026,24 @@ static bool pingServer(int port, const std::string& tok)
             int n = precv(s, buf, sizeof(buf) - 1, 0);
             if (n > 0) {
                 buf[n] = 0;
-                if (strstr(buf, "\"ok\"")) ok = true;
+                // 只认 "ok":true;403 返回的 {"ok":false} 不能算服务器活着,
+                // 否则会拿着错误令牌去开网页,打开就是 403
+                if (strstr(buf, "\"ok\":true")) ok = true;
             }
         }
     }
     pclosesocket(s);
     return ok;
+}
+
+// 多试几次:偶发超时会误判"服务器没了",导致起第二个实例抢端口
+static bool pingServerRetry(int port, const std::string& tok)
+{
+    for (int i = 0; i < 3; ++i) {
+        if (pingServer(port, tok)) return true;
+        if (i < 2) Sleep(400);
+    }
+    return false;
 }
 
 static int fallbackToMenu(const std::wstring& why)
@@ -2061,7 +2073,7 @@ static int startGui(const std::wstring& dir)
     // 已有服务器在跑?那就只拉一个窗口,不重复启动
     int oldPort = 0;
     std::string oldTok;
-    if (readState(oldPort, oldTok) && pingServer(oldPort, oldTok)) {
+    if (readState(oldPort, oldTok) && pingServerRetry(oldPort, oldTok)) {
         launchBrowser(makeUrl(oldPort, oldTok));
         return 0;
     }
@@ -2080,8 +2092,8 @@ static int startGui(const std::wstring& dir)
     for (int port = 8787; port <= 8806; ++port) {
         SOCKET s = psocket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (s == INVALID_SOCKET) break;
-        int one = 1;
-        psetsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)&one, sizeof(one));
+        // 故意不设 SO_REUSEADDR:防止第二个实例把已在服务的端口抢绑过去,
+        // 造成"两个进程一个端口、各有一套令牌"→ 网页拿状态文件的令牌访问被 403 打不开
         sockaddr_in sa;
         ZeroMemory(&sa, sizeof(sa));
         sa.sin_family = AF_INET;
